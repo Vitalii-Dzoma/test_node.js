@@ -1,7 +1,9 @@
 const fs = require("fs");
 const path = require("path");
+const { mainModule } = require("process");
 const convert = require("xml-js");
 const dataPath = path.resolve("./data.xml");
+const dataObject = path.join("./dataObject.json");
 
 function listContacts() {
   fs.readFile(dataPath, "utf8", (error, data) => {
@@ -12,33 +14,39 @@ function listContacts() {
     const result1 = convert.xml2json(data, { compact: true, spaces: 4 });
 
     const dataArray = JSON.parse(result1);
-    dataArray.CATALOG.CD.map((el) => {
-      console.table(el);
-      const cdsLength = dataArray.CATALOG.CD.length;
-      let sum = 0;
-      sum = sum + Number(el.PRICE._text);
-      console.log(sum);
-      const pricesSum = Number(el.PRICE._text);
+    let initialValue = 0;
 
-      //   const finalJSON = {
-      //     cdsCount: cdsLength,
-      //     pricesSum: 100,
-      //     countries: [USA, UK],
-      //     minYear: 1969,
-      //     maxYear: 2012,
-      //   };
+    const pricesSum = dataArray.CATALOG.CD.reduce(function (acc, currentValue) {
+      return Math.round(acc + Number(currentValue.PRICE._text));
+    }, initialValue);
+    const cdsLength = dataArray.CATALOG.CD.length;
+
+    const countriesData = dataArray.CATALOG.CD.map((el) => {
+      return el.COUNTRY._text;
     });
+
+    const dataYear = dataArray.CATALOG.CD.map((el) => {
+      if (el.YEAR._text) {
+        return el.YEAR._text;
+      }
+    });
+
+    const minData = Math.min(...dataYear);
+    const maxData = Math.max(...dataYear);
+
+    const finalJSON = {
+      cdsCount: cdsLength,
+      pricesSum: pricesSum,
+      countries: countriesData,
+      minYear: minData,
+      maxYear: maxData,
+    };
+
+    console.log(JSON.stringify(finalJSON));
+    return finalJSON;
   });
 }
 listContacts();
-
-// {
-// 	“cdsCount”: 10,
-// 	“pricesSum”: 100,
-// “countries”: [“USA”, “UK”...],
-// “minYear”: 1969,
-// “maxYear”: 2012
-// }
 
 module.exports = {
   dataPath,
